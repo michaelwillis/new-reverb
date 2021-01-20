@@ -20,6 +20,8 @@ immutable float[] INPUT_ALLPASS_DELAY_RIGHT = [
   0.01767, 0.01603, 0.01219, 0.01067, 0.00692, 0.00475, 0.00410, 0.00384, 0.00325, 0.00232
 ];
 
+immutable float INPUT_ALLPASS_MOD = 0.0003126;
+
 immutable float[] CROSS_ALLPASS_DELAY_LEFT = [0.01260, 0.00999, 0.00773, 0.00510];
 immutable float[] CROSS_ALLPASS_DELAY_RIGHT = [0.0131, 0.00949, 0.00724, 0.00560];
 
@@ -72,8 +74,8 @@ nothrow:
       // Input Diffusion
       for(int i = 0; i < 10; i ++) { // TODO: Get rid of magic number 10
         // Maybe modulate these like ProG does?
-	      outL = inputAllpassL[i].process(outL);
-	      outR = inputAllpassR[i].process(outR);
+	      outL = inputAllpassL[i].process(outL, 0);
+	      outR = inputAllpassR[i].process(outR, 0);
 	    }
 
       // Crossfeed Diffusion
@@ -171,8 +173,8 @@ nothrow:
     setDecaySeconds(decaySeconds);
 
     for(long i = 0; i < 10; i ++) {
-      inputAllpassL[i].setSize(cast(int) (INPUT_ALLPASS_DELAY_LEFT[i] * sampleRate * maxSize));
-      inputAllpassR[i].setSize(cast(int) (INPUT_ALLPASS_DELAY_RIGHT[i] * sampleRate * maxSize));
+      inputAllpassL[i].setSize(cast(int) (INPUT_ALLPASS_DELAY_LEFT[i] * sampleRate * maxSize), cast(int)(INPUT_ALLPASS_MOD * sampleRate));
+      inputAllpassR[i].setSize(cast(int) (INPUT_ALLPASS_DELAY_RIGHT[i] * sampleRate * maxSize), cast(int)(INPUT_ALLPASS_MOD * sampleRate));
     }
 
     for(long i = 0; i < 4; i ++) {
@@ -328,8 +330,6 @@ private:
 
   float widthMult1 = 1.0, widthMult2 = 0.0; // Multipliers for width
 
-  float hpfL = 0.0, lpfL = 0.0, hpfR = 0.0, lpfR = 0.0;
-
   float loopdecay = DECAY_0;
 
   Delayline!float 
@@ -339,7 +339,7 @@ private:
   // More consistent name for delayR_ts?
   // _FV3_(delay) delayR_ts, delayR_41;
 
-  FirstOrderFeedbackAllpassFilter[10] inputAllpassL, inputAllpassR;
+  FirstOrderModulatedAllpassFilter[10] inputAllpassL, inputAllpassR;
   FirstOrderFeedbackAllpassFilter[4] crossAllpassL, crossAllpassR;
 
   FirstOrderFeedbackAllpassFilter allpassL_15_16, allpassR_19_20, allpassL_17_18, allpassR_21_22;

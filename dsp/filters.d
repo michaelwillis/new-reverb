@@ -75,7 +75,7 @@ struct FeedforwardCombFilter {
   }
 
   float process(float input, float feedforward) nothrow @nogc {
-    float output = buffer.sampleFull(size - 1) * feedforward + input;
+    float output = buffer.sampleFull(delay) * feedforward + input;
     buffer.feedSample(input);
     return output;
   }
@@ -137,6 +137,65 @@ struct FirstOrderFeedbackAllpassFilter {
 
   int size, delay;
   float decay = 1, feedback = 0;
+  Delayline!float buffer;
+}
+
+
+struct FirstOrderModulatedAllpassFilter {
+  void mute() nothrow @nogc {
+    setSize(size, modsize); // Reallocates buffer and fills with zeros
+  }
+
+  float process(float input, float mod) nothrow @nogc {
+
+    // TODO: check that this preserves float precision
+    // TODO: Why (mod + 1.0) ?
+    mod = (mod + 1.0) * modsize;
+
+    float mod_floor = floor(mod);
+    float mod_fraction = 1. - (mod - mod_floor);
+
+    int delayA = delay + cast(int)(mod_floor);
+    int delayB = delayA + 1;
+
+    z1 = buffer.sampleFull(delayB) +
+      (buffer.sampleFull(delayA) - z1) * mod_fraction;
+
+    input += z1 * feedback;
+    buffer.feedSample(input);
+    return decay * z1 - input * feedback;
+  }
+
+  void setFeedback(float feedback) nothrow @nogc {
+      this.feedback = feedback;
+  }
+
+  void setDecay(float decay) nothrow @nogc {
+    assert(decay <= 1.0);
+  }
+
+  void setDelay(int delay) nothrow @nogc {
+    assert(delay <= size);
+    this.delay = delay;
+  }
+
+  void setSize(int size, int modsize) nothrow @nogc {
+    assert(size > 1);
+    assert(modsize > 1);
+    assert(modsize < size);
+
+    this.size = size;
+    this.modsize = modsize;
+
+    buffer.resize(size + modsize);
+
+    setDelay(size);
+
+    this.z1 = 0.0;
+  }
+
+  int size, modsize, delay; // All measured in number of samples
+  float decay = 1.0, feedback = 0.0, z1 = 0.0;
   Delayline!float buffer;
 }
 
