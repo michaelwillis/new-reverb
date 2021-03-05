@@ -1,0 +1,19 @@
+dl {
+    padding: 0.5em 0 0;
+    margin: 0.5em 0 0;
+}
+dt {
+    float: left;
+    clear: left;
+    width: 6em;
+    font-weight: bold;
+}
+
+dd {
+    margin: 0 0 0 7em;
+    padding: 0 0 0.5em;
+}
+
+p {
+    margin: 0 0 1em 0;
+}
